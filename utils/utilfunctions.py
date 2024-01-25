@@ -1,5 +1,4 @@
 import tensorflow as tf
-import tensorflow_text as tf_text
 
 
 def preprocess_pt(text):
@@ -7,7 +6,6 @@ def preprocess_pt(text):
     text = tf.strings.lower(text)
     text = tf.strings.regex_replace(text, " é ", ' ee ')
     text = tf.strings.regex_replace(text, " à ", ' aa ')
-    text = tf_text.normalize_utf8(text, 'NFKD')
 
     # Keep space, a to z, and select punctuation.
     text = tf.strings.regex_replace(text, '[^ a-z.?!,¿]', '')
@@ -20,7 +18,6 @@ def preprocess_pt(text):
 
 
 def preprocess_eng(text):
-    text = tf_text.normalize_utf8(text, 'NFKD')
     text = tf.strings.lower(text)
 
     text = tf.strings.regex_replace(text, "i'm", 'i am')
