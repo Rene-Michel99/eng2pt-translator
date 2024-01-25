@@ -30,7 +30,7 @@ def _training(dataset_path):
 
     is_train = np.random.uniform(size=(len(pt_data),)) < 0.8
 
-    print("Preparando dados...")
+    print("Processing data to optimized training...")
 
     train_raw = (
         tf.data.Dataset
@@ -84,7 +84,6 @@ def _training(dataset_path):
         print(ex_tar_in[0, :10].numpy())
         print(ex_tar_out[0, :10].numpy())
 
-    print("Carregando modelo e realizando inferência...")
     model = Translator(
         UNITS,
         input_text_processor,
@@ -109,29 +108,27 @@ def _training(dataset_path):
         callbacks=[tf.keras.callbacks.EarlyStopping(patience=3)]
     )
     model.save_weights("logs/translator_weights.h5")
-    print("Modelo salvo em logs/translator_weights.h5")
+    print("Model saved in logs/translator_weights.h5")
     _save_vocab("./Data/input_vocab.json", input_text_processor)
     _save_vocab("./Data/output_vocab.json", output_text_processor)
 
 
 def main(mode, dataset_path=None):
     if mode == "inference":
-        # Lógica para inferência
-        print("Executando modo de inferência...")
-
+        print("Executing inference mode...")
+        print("Loading inference model...")
     elif mode == "training":
-        # Lógica para treinamento
-        print("Executando modo de treinamento...")
-        print("Carregando conjunto de dados em:", dataset_path)
+        print("Executing training mode...")
+        print("Loading dataset from:", dataset_path)
         _training(dataset_path)
     else:
-        print("Modo não reconhecido. Use 'inference' ou 'training'.")
+        print("Unkdown mode. Use 'inference' or 'training'.")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Rede neural para tradução de textos em idiomas diferentes.")
-    parser.add_argument("mode", choices=["inference", "training"], help="Modo de operação, inference executa a tradução ou training que executa o treinamento)")
-    parser.add_argument("--dataset_path", help="Caminho do conjunto de dados para treinamento (opcional)")
+    parser = argparse.ArgumentParser(description="Neural network to translate different languages.")
+    parser.add_argument("mode", choices=["inference", "training"], help="Operation mode, inference execute single translation or training that executes the training).")
+    parser.add_argument("--dataset_path", help="Path to training dataset (optional)")
 
     args = parser.parse_args()
     main(args.mode, args.dataset_path)
