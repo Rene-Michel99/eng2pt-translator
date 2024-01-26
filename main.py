@@ -8,12 +8,18 @@ from CustomModel import Translator
 from CustomLosses import CustomLosses
 
 
+MAX_VOCAB_SIZE = 5000
 UNITS = 1024
 
 
 def _save_vocab(path, text_processor):
     with open(path, "w") as f:
         f.write(json.dumps({"vocab": text_processor.get_vocabulary()}))
+
+
+def _load_vocab(vocab_type):
+    with open(f"./Data/{vocab_type}", "r") as f:
+        return json.loads(f.read())["vocab"]
 
 
 def _training(dataset_path):
@@ -51,17 +57,15 @@ def _training(dataset_path):
         print(example_target_strings[:5])
         break
 
-    max_vocab_size = 5000
-
     input_text_processor = tf.keras.layers.TextVectorization(
         standardize=preprocess_eng,
-        max_tokens=max_vocab_size,
+        max_tokens=MAX_VOCAB_SIZE,
         ragged=True
     )
 
     output_text_processor = tf.keras.layers.TextVectorization(
         standardize=preprocess_pt,
-        max_tokens=max_vocab_size,
+        max_tokens=MAX_VOCAB_SIZE,
         ragged=True
     )
 
@@ -113,10 +117,46 @@ def _training(dataset_path):
     _save_vocab("./Data/output_vocab.json", output_text_processor)
 
 
-def main(mode, dataset_path=None):
+def _inference(model_weights):
+    input_text_processor = tf.keras.layers.TextVectorization(
+        vocabulary=_load_vocab("input_vocab"),
+        standardize=preprocess_eng,
+        max_tokens=MAX_VOCAB_SIZE,
+        split='whitespace',
+        ragged=True
+    )
+
+    output_text_processor = tf.keras.layers.TextVectorization(
+        vocabulary=_load_vocab("output_vocab"),
+        standardize=preprocess_pt,
+        max_tokens=MAX_VOCAB_SIZE,
+        ragged=True
+    )
+
+    model = Translator(
+        UNITS,
+        input_text_processor,
+        output_text_processor,
+    )
+    model.compile(
+        optimizer='adam',
+        loss=CustomLosses.masked_loss,
+        metrics=[CustomLosses.masked_acc, CustomLosses.masked_loss]
+    )
+    model.load_weights(model_weights)
+
+    input_text = str(input("Insert the text to be translated: "))
+
+    result = model.translate([input_text])
+    result = result[0].numpy().decode()
+    print(result)
+
+
+def main(mode, dataset_path=None, model_weights=None):
     if mode == "inference":
         print("Executing inference mode...")
         print("Loading inference model...")
+        _inference(model_weights)
     elif mode == "training":
         print("Executing training mode...")
         print("Loading dataset from:", dataset_path)
@@ -129,6 +169,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Neural network to translate different languages.")
     parser.add_argument("mode", choices=["inference", "training"], help="Operation mode, inference execute single translation or training that executes the training).")
     parser.add_argument("--dataset_path", help="Path to training dataset (optional)")
+    parser.add_argument("--model_weights", help="Path to trained model weights (optional)")
 
     args = parser.parse_args()
-    main(args.mode, args.dataset_path)
+    main(args.mode, args.dataset_path, args.model_weights)
